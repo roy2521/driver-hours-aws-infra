@@ -1,0 +1,25 @@
+##################
+##  Terraform   ##
+##################
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+crash.log
+##################
+## private keys ##
+##################
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+*.crt
+*.csr
+##################
+## kube configs ##
+##################
+.kube/
+##################
+*.tfvars.json   
+*.tfvars
+##################

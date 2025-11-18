@@ -1,0 +1,79 @@
+name: Terraform Multi-Environment Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Choose environment: dev / stage / prod"
+        required: true
+        default: "dev"
+      action:
+        description: "Choose action: plan / apply / destroy"
+        required: true
+        default: "plan"
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write   # REQUIRED for OIDC!!!
+      contents: read
+
+    env:
+      AWS_REGION: ${{ secrets.TF_VAR_REGION }}
+      TF_VAR_region: ${{ secrets.TF_VAR_REGION }}
+      TF_VAR_env_name: ${{ github.event.inputs.environment }}
+      TF_VAR_vpc_cidr: ${{ secrets.TF_VAR_VPC_CIDR }}
+
+      TF_VAR_azs: ${{ secrets.TF_VAR_AZS }}
+      TF_VAR_private_subnets: ${{ secrets.TF_VAR_PRIVATE_SUBNETS }}
+      TF_VAR_public_subnets: ${{ secrets.TF_VAR_PUBLIC_SUBNETS }}
+
+      TF_VAR_key_name: ${{ secrets.TF_VAR_KEY_NAME }}
+      TF_VAR_instance_type: ${{ secrets.TF_VAR_INSTANCE_TYPE }}
+      TF_VAR_alert_email: ${{ secrets.TF_VAR_ALERT_EMAIL }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+          output-credentials: true
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Select working directory
+        id: select-dir
+        run: |
+          echo "DIR=envs/${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+
+      - name: Terraform Init
+        working-directory: ${{ steps.select-dir.outputs.DIR }}
+        run: terraform init -input=false
+
+      - name: Terraform Validate
+        working-directory: ${{ steps.select-dir.outputs.DIR }}
+        run: terraform validate
+
+      - name: Terraform Plan / Apply / Destroy
+        working-directory: ${{ steps.select-dir.outputs.DIR }}
+        run: |
+          if [ "${{ github.event.inputs.action }}" = "plan" ]; then
+            echo "Running terraform PLAN..."
+            terraform plan -input=false;
+          elif [ "${{ github.event.inputs.action }}" = "apply" ]; then
+            echo "Running terraform APPLY..."
+            terraform apply -auto-approve -input=false;
+          elif [ "${{ github.event.inputs.action }}" = "destroy" ]; then
+            echo "Running terraform DESTROY..."
+            terraform destroy -auto-approve -input=false;
+          else
+            echo "Unknown action"; exit 1;
+          fi
+
