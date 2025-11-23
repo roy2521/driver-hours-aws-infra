@@ -29,7 +29,7 @@ data "aws_ami" "latest_amazon_linux" {
 
   filter {
     name   = "name"
-    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+    values = ["amzn2-ami-hvm-*-x86_64-*"]
   }
 
 }
@@ -44,6 +44,16 @@ resource "aws_launch_template" "web_lt" {
 
   vpc_security_group_ids = [aws_security_group.web_sg.id]
   iam_instance_profile {name = var.instance_profile_name}
+
+  block_device_mappings {
+  device_name = "/dev/xvda"
+
+  ebs {
+    volume_type = "gp3"
+    delete_on_termination = true
+    encrypted = true
+  }
+ }
 
   tag_specifications {
     resource_type = "instance"
@@ -80,7 +90,7 @@ resource "aws_autoscaling_group" "web_asg" {
     
     preferences {
       min_healthy_percentage = 90
-      instance_warmup        = 60
+      instance_warmup        = 120
     }
   }
   
@@ -103,6 +113,24 @@ resource "aws_autoscaling_group" "web_asg" {
 }
 
 
+#############################################
+# Auto Scaling Policy
+#############################################
+resource "aws_autoscaling_policy" "cpu_target_tracking" {
+  name                   = "cpu-scaling-policy-${var.env_name}"
+  autoscaling_group_name = aws_autoscaling_group.web_asg.name
+  policy_type            = "TargetTrackingScaling"
+
+  target_tracking_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ASGAverageCPUUtilization"
+    }
+
+    # Scale OUT above 60% CPU
+    # Scale IN below 60%
+    target_value = 60
+  }
+}
 
 
 
