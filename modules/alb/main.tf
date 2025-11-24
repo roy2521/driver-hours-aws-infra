@@ -83,5 +83,38 @@ resource "aws_lb_listener" "http" {
 }
 
 
+########################################
+# Https Options + ACM
+########################################
+
+# resource "aws_acm_certificate" "app_cert" {
+#   domain_name       = var.domain_name
+#   validation_method = "DNS"
+#
+#   tags = {
+#     Environment = var.env_name
+#   }
+# }
+
+# resource "aws_route53_record" "cert_validation" {
+#   zone_id = var.hosted_zone_id
+#   name    = aws_acm_certificate.app_cert.domain_validation_options[0].resource_record_name
+#   type    = aws_acm_certificate.app_cert.domain_validation_options[0].resource_record_type
+#   records = [aws_acm_certificate.app_cert.domain_validation_options[0].resource_record_value]
+#   ttl     = 60
+# }
+
+# resource "aws_lb_listener" "https_listener" {
+#   load_balancer_arn = aws_lb.web_alb.arn
+#   port              = 443
+#   protocol          = "HTTPS"
+#   ssl_policy        = "ELBSecurityPolicy-2016-08"
+#   certificate_arn   = aws_acm_certificate.app_cert.arn
+#
+#   default_action {
+#     type             = "forward"
+#     target_group_arn = aws_lb_target_group.web_tg.arn
+#   }
+# }
 
 

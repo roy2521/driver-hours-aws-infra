@@ -28,6 +28,16 @@ resource "aws_cloudwatch_log_group" "web_logs" {
   }
 }
 
+# CloudWatch EC2 Log
+resource "aws_cloudwatch_log_group" "user_data_logs" {
+  name              = "/web/${var.env_name}/user_data"
+  retention_in_days = 14
+
+  tags = {
+    Environment = var.env_name
+  }
+}
+
 # CloudWatch Alarm for high CPU usage
 resource "aws_cloudwatch_metric_alarm" "cpu_alarm" {
   alarm_name          = "HighCPU-${var.env_name}"
@@ -93,4 +103,5 @@ resource "aws_cloudwatch_metric_alarm" "disk_read_alarm" {
     Environment = var.env_name
   }
 }
+
 
